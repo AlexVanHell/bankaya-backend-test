@@ -1,0 +1,94 @@
+import java.util.Properties
+
+plugins {
+	id 'org.springframework.boot' version '2.3.4.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+	id 'org.flywaydb.flyway' version '7.0.1'
+	id 'idea'
+	id 'java'
+	id 'war'
+}
+
+apply plugin: 'org.flywaydb.flyway'
+
+group = 'com.alejandrovillarroel'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+ext.flywayVersion = '7.0.1'
+ext.ApplicationProps = new Properties()
+ApplicationProps.load(new FileInputStream('src/main/resources/application.properties'))
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-web-services'
+	implementation 'wsdl4j:wsdl4j:1.6.1'
+	jaxb('org.glassfish.jaxb:jaxb-xjc:2.2.11')
+	compile(files(genJaxb.classesDir).builtBy(genJaxb))
+	compile 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'mysql:mysql-connector-java'
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+flyway {
+	url = ApplicationProps['flyway.url']
+	user = ApplicationProps['flyway.user']
+	password = ApplicationProps['flyway.password']
+}
+
+configurations {
+	jaxb
+}
+
+bootJar {
+	baseName = 'gs-producing-web-service'
+	version =  '0.1.0'
+}
+
+task genJaxb {
+	ext.sourcesDir = "${buildDir}/generated-sources/jaxb"
+	ext.classesDir = "${buildDir}/classes/jaxb"
+	ext.schema = "src/main/resources/countries.xsd"
+
+	outputs.dir classesDir
+
+	doLast() {
+		project.ant {
+			taskdef name: "xjc", classname: "com.sun.tools.xjc.XJCTask",
+					classpath: configurations.jaxb.asPath
+			mkdir(dir: sourcesDir)
+			mkdir(dir: classesDir)
+
+			xjc(destdir: sourcesDir, schema: schema) {
+				arg(value: "-wsdl")
+				produces(dir: sourcesDir, includes: "**/*.java")
+			}
+
+			javac(destdir: classesDir, source: 1.6, target: 1.6, debug: true,
+					debugLevel: "lines,vars,source", includeantruntime: false,
+					classpath: configurations.jaxb.asPath) {
+				src(path: sourcesDir)
+				include(name: "**/*.java")
+				include(name: "*.java")
+			}
+
+			copy(todir: classesDir) {
+				fileset(dir: sourcesDir, erroronmissingdir: false) {
+					exclude(name: "**/*.java")
+				}
+			}
+		}
+	}
+}

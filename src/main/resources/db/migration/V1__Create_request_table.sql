@@ -1,0 +1,7 @@
+CREATE TABLE request_data (
+	id BIGINT AUTO_INCREMENT PRIMARY KEY,
+	origin_ip VARCHAR(100) NOT NULL,
+	method SMALLINT NOT NULL,
+	created_at DATETIME NOT NULL,
+	updated_at DATETIME NOT NULL
+);

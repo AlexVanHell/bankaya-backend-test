@@ -1,0 +1,25 @@
+version: '3.8'
+
+networks:
+  database:
+
+services:
+  database:
+    image: mysql:8
+    container_name: bankaya-test-database
+    env_file:
+      - ./.env
+    volumes:
+      - './.docker/mysql/data/db:/var/lib/mysql'
+    restart: always
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    networks:
+      database:
+        aliases:
+          - database
